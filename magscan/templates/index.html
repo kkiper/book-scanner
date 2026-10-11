@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="card" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  <form method="post" action="/scan"><button>1. Scan library for files</button></form>
+  <form method="post" action="/bulk"><input type="hidden" name="status" value="{{ status }}">
+    <button name="action" value="analyze_all_new">2. Read covers of all new files ({{ counts.get('new', 0) }})</button></form>
+  <form method="post" action="/bulk" onsubmit="return confirm('Rename and write metadata for all {{ counts.get('review', 0) }} reviewed files?')">
+    <input type="hidden" name="status" value="{{ status }}">
+    <button class="primary" name="action" value="apply_all_review">3. Apply all in review ({{ counts.get('review', 0) }})</button></form>
+  <span class="muted" id="queue" style="margin-left:auto">
+    {% if pending %}Working: {{ current or '' }} · {{ pending }} job(s) queued{% else %}Idle{% endif %}
+  </span>
+</div>
+
+<div class="tabs">
+  {% for s in statuses %}<a href="/?status={{ s }}" class="{{ 'on' if s == status }}">{{ s }} ({{ counts.get(s, 0) }})</a>{% endfor %}
+  <a href="/?status=" class="{{ 'on' if not status }}">all</a>
+</div>
+
+<form method="post" action="/bulk" class="card">
+  <input type="hidden" name="status" value="{{ status }}">
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <label style="margin:0;font-weight:400"><input type="checkbox" onclick="document.querySelectorAll('input[name=ids]').forEach(c=>c.checked=this.checked)"> select all</label>
+    <button name="action" value="analyze">Read cover again</button>
+    <button name="action" value="apply" class="primary">Apply selected</button>
+    <button name="action" value="skip">Skip</button>
+    <button name="action" value="unskip">Un-skip</button>
+  </div>
+  {% if not items %}<p class="muted">Nothing here. {% if status == 'review' %}Scan the library and read some covers first.{% endif %}</p>{% endif %}
+  <table>
+    <tr><th></th><th></th><th>File</th><th class="hide-sm">Found on cover</th><th>Status</th></tr>
+    {% for item in items %}
+    <tr>
+      <td><input type="checkbox" name="ids" value="{{ item.id }}"></td>
+      <td>{% if item.info %}<a href="/item/{{ item.id }}"><img class="thumb" loading="lazy" src="/cover/{{ item.id }}" alt=""></a>{% endif %}</td>
+      <td>
+        <a href="/item/{{ item.id }}">{{ item.name }}</a>
+        {% if item.preview.target and item.status != 'applied' %}<div><span class="arrow">→</span> {{ item.preview.target }}</div>{% endif %}
+        {% if item.preview.error %}<div class="err">{{ item.preview.error }}</div>{% endif %}
+        {% if item.error %}<div class="err">{{ item.error }}</div>{% endif %}
+      </td>
+      <td class="hide-sm">
+        {% if item.info %}
+          <strong>{{ item.preview.title }}</strong>
+          {% set conf = item.info.confidence or 0 %}
+          <div class="{{ 'ok' if conf >= 0.8 else 'warn' }}">confidence {{ '%.0f' % (conf * 100) }}%{% if item.edits %} · edited{% endif %}</div>
+          {% if item.info.notes %}<div class="muted">{{ item.info.notes }}</div>{% endif %}
+        {% endif %}
+      </td>
+      <td><span class="badge">{{ item.status }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+</form>
+{% if pending %}<script>setTimeout(() => location.reload(), 4000)</script>{% endif %}
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Settings · magscan{% endblock %}
+{% block main %}
+{% if saved %}<div class="card ok">Saved.</div>{% endif %}
+<form method="post" class="card" id="settings">
+  <h3 style="margin-top:0">Templates</h3>
+  <p class="muted">Fields: {% for f in fields %}<code>{{ '{' ~ f ~ '}' }}</code> {% endfor %}<br>
+  Format numbers like <code>{month:02}</code>. Wrap optional parts in <code>[ ]</code>: <code>[ - Issue {issue}]</code> disappears when no issue number was found.
+  A <code>/</code> in the file name template creates folders under the {{ 'output' if s.output_dir else 'library' }} folder; without one, files are renamed where they are{% if s.output_dir %} (moved to the output folder){% endif %}.</p>
+
+  <label for="filename_template">File name</label>
+  <input type="text" id="filename_template" name="filename_template" value="{{ s.filename_template }}">
+  <label for="title_template">Booklore title</label>
+  <input type="text" id="title_template" name="title_template" value="{{ s.title_template }}">
+  <label for="author_template">Author(s) - separate several with <code>;</code></label>
+  <input type="text" id="author_template" name="author_template" value="{{ s.author_template }}">
+  <label for="description_template">Description</label>
+  <textarea id="description_template" name="description_template" rows="4">{{ s.description_template }}</textarea>
+  <label for="categories">Categories always added (comma separated; the magazine's topic is added too)</label>
+  <input type="text" id="categories" name="categories" value="{{ s.categories }}">
+
+  <div class="card" style="margin-top:14px" id="preview">
+    <strong>Preview</strong> <span class="muted">(sample issue)</span>
+    <div id="p-error" class="err">{{ sample.error or '' }}</div>
+    <div><span class="muted">File:</span> <span id="p-filename">{{ sample.filename }}</span></div>
+    <div><span class="muted">Title:</span> <span id="p-title">{{ sample.title }}</span></div>
+    <div><span class="muted">Author:</span> <span id="p-author">{{ sample.author }}</span></div>
+    <div><span class="muted">Description:</span><pre id="p-description">{{ sample.description }}</pre></div>
+  </div>
+
+  <h3>Output</h3>
+  <label style="font-weight:400"><input type="checkbox" name="write_sidecar" {{ 'checked' if s.write_sidecar }}> Write Booklore sidecar <code>.metadata.json</code></label>
+  <label style="font-weight:400"><input type="checkbox" name="write_sidecar_cover" {{ 'checked' if s.write_sidecar_cover }}> Write sidecar <code>.cover.jpg</code></label>
+  <label style="font-weight:400"><input type="checkbox" name="write_pdf_metadata" {{ 'checked' if s.write_pdf_metadata }}> Embed title/author/description in the PDF itself</label>
+  <label style="font-weight:400"><input type="checkbox" name="skip_if_sidecar_exists" {{ 'checked' if s.skip_if_sidecar_exists }}> Ignore files that already have a sidecar</label>
+
+  <h3>Automation</h3>
+  <label style="font-weight:400"><input type="checkbox" name="auto_apply" {{ 'checked' if s.auto_apply }}> Apply automatically when the model is confident (skips review)</label>
+  <div class="row">
+    <div><label for="min_confidence_auto_apply">Minimum confidence (0-1)</label>
+    <input type="number" step="0.05" min="0" max="1" id="min_confidence_auto_apply" name="min_confidence_auto_apply" value="{{ s.min_confidence_auto_apply }}"></div>
+    <div><label for="scan_interval_minutes">Auto-scan every N minutes (0 = off, restart to apply)</label>
+    <input type="number" min="0" id="scan_interval_minutes" name="scan_interval_minutes" value="{{ s.scan_interval_minutes }}"></div>
+  </div>
+
+  <h3>Cover reader</h3>
+  <div class="row">
+    <div><label for="provider">Provider</label>
+    <select id="provider" name="provider">
+      <option value="anthropic" {{ 'selected' if s.provider == 'anthropic' }}>Claude (Anthropic API)</option>
+      <option value="ollama" {{ 'selected' if s.provider == 'ollama' }}>Ollama (local)</option>
+    </select></div>
+    <div><label for="claude_model">Claude model</label><input type="text" id="claude_model" name="claude_model" value="{{ s.claude_model }}"></div>
+    <div><label for="ollama_url">Ollama URL</label><input type="text" id="ollama_url" name="ollama_url" value="{{ s.ollama_url }}"></div>
+    <div><label for="ollama_model">Ollama model</label><input type="text" id="ollama_model" name="ollama_model" value="{{ s.ollama_model }}"></div>
+  </div>
+  <p class="muted">Library: <code>{{ s.library_dir }}</code>{% if s.output_dir %} · Output: <code>{{ s.output_dir }}</code>{% endif %} · Config: <code>{{ s.config_dir }}</code> (set by the container's paths)</p>
+  <button class="primary">Save settings</button>
+</form>
+<script>
+const ids = ["filename_template", "title_template", "description_template", "author_template"];
+let timer;
+ids.forEach(id => document.getElementById(id).addEventListener("input", () => {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    const body = Object.fromEntries(ids.map(i => [i, document.getElementById(i).value]));
+    const r = await fetch("/api/preview", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    const p = await r.json();
+    document.getElementById("p-error").textContent = p.error || "";
+    ["filename", "title", "author", "description"].forEach(k => document.getElementById("p-" + k).textContent = p[k] || "");
+  }, 250);
+}));
+</script>
+{% endblock %}
