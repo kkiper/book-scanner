@@ -1,0 +1,17 @@
+services:
+  magscan:
+    image: ghcr.io/kkiper/book-scanner:latest
+    # build: .   # or build locally from this folder
+    container_name: magscan
+    user: "99:100"
+    ports:
+      - "8484:8484"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # PROVIDER: ollama
+      # OLLAMA_URL: http://ollama:11434
+      FILENAME_TEMPLATE: "{magazine} - {year}-{month:02}[ - Issue {issue}]"
+    volumes:
+      - ./config:/config
+      - /mnt/user/media/magazines:/library
+    restart: unless-stopped

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>magscan</Name>
+  <Repository>ghcr.io/kkiper/book-scanner:latest</Repository>
+  <Support>https://github.com/kkiper/book-scanner</Support>
+  <Project>https://github.com/kkiper/book-scanner</Project>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Overview>Reads magazine covers (PDF/CBZ/EPUB) with an AI vision model, renames the files to your template and writes Booklore-compatible .metadata.json sidecars and embedded PDF metadata. Review everything in the web UI before applying.</Overview>
+  <Category>Tools: MediaApp:Books</Category>
+  <WebUI>http://[IP]:[PORT:8484]/</WebUI>
+  <ExtraParams>--user 99:100</ExtraParams>
+  <Config Name="WebUI Port" Target="8484" Default="8484" Mode="tcp" Description="Web interface" Type="Port" Display="always" Required="true">8484</Config>
+  <Config Name="Magazine library" Target="/library" Default="/mnt/user/media/magazines" Mode="rw" Description="Folder with your magazines. Use the same folder Booklore's library points to." Type="Path" Display="always" Required="true">/mnt/user/media/magazines</Config>
+  <Config Name="AppData" Target="/config" Default="/mnt/user/appdata/magscan" Mode="rw" Description="Settings, database and cover cache" Type="Path" Display="always" Required="true">/mnt/user/appdata/magscan</Config>
+  <Config Name="Anthropic API key" Target="ANTHROPIC_API_KEY" Default="" Mode="" Description="From console.anthropic.com. Leave empty when using Ollama." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Provider" Target="PROVIDER" Default="anthropic|ollama" Mode="" Description="anthropic (Claude) or ollama (local vision model)" Type="Variable" Display="always" Required="false">anthropic</Config>
+  <Config Name="Claude model" Target="CLAUDE_MODEL" Default="claude-opus-5-5" Mode="" Description="claude-opus-5-5 is most accurate; claude-haiku-5-5 is far cheaper for big collections" Type="Variable" Display="advanced" Required="false">claude-opus-5-5</Config>
+  <Config Name="Ollama URL" Target="OLLAMA_URL" Default="http://192.168.1.10:11434" Mode="" Description="Only for PROVIDER=ollama" Type="Variable" Display="advanced" Required="false"></Config>
+  <Config Name="Ollama model" Target="OLLAMA_MODEL" Default="qwen2.5vl:7b" Mode="" Description="A vision model pulled into Ollama" Type="Variable" Display="advanced" Required="false">qwen2.5vl:7b</Config>
+  <Config Name="File name template" Target="FILENAME_TEMPLATE" Default="{magazine} - {year}-{month:02}[ - Issue {issue}]" Mode="" Description="Initial value; can be changed later in the web UI" Type="Variable" Display="advanced" Required="false">{magazine} - {year}-{month:02}[ - Issue {issue}]</Config>
+  <Config Name="Output folder" Target="OUTPUT_DIR" Default="" Mode="" Description="Optional: move renamed files here instead of renaming in place (map a path for it too)" Type="Variable" Display="advanced" Required="false"></Config>
+  <Config Name="Auto-scan minutes" Target="SCAN_INTERVAL_MINUTES" Default="0" Mode="" Description="Scan for new files and read their covers every N minutes (0 = manual)" Type="Variable" Display="advanced" Required="false">0</Config>
+</Container>

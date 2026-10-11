@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ preview.title or item.path }} · magscan{% endblock %}
+{% block main %}
+<p><a href="/?status={{ item.status }}">← back</a></p>
+<div class="grid">
+  <div>
+    {% if item.info or item.status == 'error' %}<img src="/cover/{{ item.id }}" alt="cover" onerror="this.style.display='none'">{% endif %}
+    <p class="muted" style="word-break:break-all">{{ item.path }}</p>
+    {% if item.original_path != item.path %}<p class="muted" style="word-break:break-all">originally: {{ item.original_path }}</p>{% endif %}
+  </div>
+  <div>
+    {% if item.error %}<div class="card err">{{ item.error }}</div>{% endif %}
+    {% if preview %}
+    <div class="card">
+      {% if preview.error %}<p class="err">{{ preview.error }}</p>{% else %}
+      <div><span class="muted">File name:</span> <strong>{{ preview.target }}</strong></div>
+      <div><span class="muted">Booklore title:</span> {{ preview.title }}</div>
+      {% if preview.authors %}<div><span class="muted">Author:</span> {{ preview.authors }}</div>{% endif %}
+      <div><span class="muted">Series:</span> {{ preview.series or '-' }}{% if preview.series_number is not none %} #{{ '%g' % preview.series_number }}{% endif %}
+        · <span class="muted">Published:</span> {{ preview.published or '-' }}
+        · <span class="muted">Categories:</span> {{ preview.categories }}</div>
+      {% if preview.description %}<div><span class="muted">Description:</span><pre>{{ preview.description }}</pre></div>{% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if item.info %}
+    <form method="post" class="card">
+      <p class="muted">Confidence {{ '%.0f' % ((item.info.confidence or 0) * 100) }}%{% if item.info.notes %} - {{ item.info.notes }}{% endif %}</p>
+      <div class="row">
+      {% for f in fields if f not in ('headline', 'cover_lines') %}
+        <div><label for="{{ f }}">{{ f.replace('_', ' ') }}</label>
+        <input type="text" id="{{ f }}" name="{{ f }}" value="{{ info[f] if info[f] is not none else '' }}"></div>
+      {% endfor %}
+      </div>
+      <label for="headline">headline</label>
+      <input type="text" id="headline" name="headline" value="{{ info.headline or '' }}">
+      <label for="cover_lines">cover lines (one per line)</label>
+      <textarea id="cover_lines" name="cover_lines" rows="5">{{ info.cover_lines or '' }}</textarea>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button name="action" value="save">Save</button>
+        <button class="primary" name="action" value="save_apply">Save &amp; apply</button>
+        <button name="action" value="reanalyze">Read cover again</button>
+        <button name="action" value="skip">Skip</button>
+        {% if has_history %}<button class="danger" name="action" value="undo">Undo rename</button>{% endif %}
+      </div>
+    </form>
+    {% else %}
+    <form method="post" class="card"><button class="primary" name="action" value="reanalyze">Read cover</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
